@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Users · Radio Calico</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <span class="logo">👥</span>
+      <h1>Users</h1>
+    </div>
+    <p class="tagline"><a class="nav-link" href="/">← Back to Radio Calico</a></p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2 id="form-title">Add user</h2>
+      <form id="user-form" class="user-form">
+        <input type="hidden" id="user-id" />
+        <div class="field">
+          <label for="first_name">First name</label>
+          <input id="first_name" name="first_name" required autocomplete="given-name" />
+        </div>
+        <div class="field">
+          <label for="last_name">Last name</label>
+          <input id="last_name" name="last_name" required autocomplete="family-name" />
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" required autocomplete="email" />
+        </div>
+        <div class="form-actions">
+          <button type="submit" id="submit-btn">Add user</button>
+          <button type="button" id="cancel-btn" class="secondary" hidden>Cancel</button>
+        </div>
+        <p class="form-msg" id="form-msg" role="alert"></p>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>All users</h2>
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>First name</th>
+            <th>Last name</th>
+            <th>Email</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="user-rows"><!-- filled by JS --></tbody>
+      </table>
+      <p class="empty" id="users-empty" hidden>No users yet. Add one above.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Local prototype · Express + SQLite</p>
+  </footer>
+
+  <script src="/users/users.js"></script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Radio Calico · Lossless Internet Radio</title>
+  <meta name="description" content="Kick back and enjoy crystal-clear 24-bit / 48 kHz lossless radio." />
+  <link rel="icon" href="/logo.png" />
+  <!-- Brand typefaces per the Radio Calico style guide -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- Charcoal nav bar with centered logo (Radio [logo] Calico) -->
+  <nav class="nav">
+    <a class="nav-link" href="/users/">Users</a>
+    <div class="brand">
+      <span>Radio</span>
+      <img class="nav-logo" src="/logo.png" alt="Radio Calico" />
+      <span>Calico</span>
+    </div>
+    <select class="station-select" id="station-select" aria-label="Choose station">
+      <!-- options filled by JS from STATIONS -->
+    </select>
+  </nav>
+
+  <main class="container">
+    <!-- Now playing: album art left, track details right -->
+    <section class="player-card" id="now-playing" aria-live="polite">
+      <div class="art" id="art" aria-hidden="true">
+        <img id="art-img" alt="" />
+        <span class="art-placeholder" id="art-placeholder">♫</span>
+      </div>
+
+      <div class="player-body">
+        <h1 class="np-artist" id="np-artist">Radio Calico</h1>
+        <p class="np-title" id="np-title">Press play to tune in</p>
+        <p class="np-album" id="np-album"></p>
+
+        <div class="quality" id="np-quality" hidden>
+          <p>Source quality: 16-bit / 44.1 kHz</p>
+          <p>Stream quality: 48 kHz FLAC · Lossless</p>
+        </div>
+
+        <div class="rate-row" id="rate-row" hidden>
+          <span class="rate-label">Rate this track:</span>
+          <div class="rating" id="np-rating"></div>
+        </div>
+
+        <!-- Dark pill player bar -->
+        <div class="playerbar">
+          <button class="play-btn" id="play-btn" aria-label="Play" aria-pressed="false">
+            <span class="play-icon" id="play-icon">▶</span>
+          </button>
+          <span class="time" id="time">0:00</span>
+          <span class="bar-spacer" aria-hidden="true"></span>
+          <span class="status-text" id="status-text"></span>
+          <span class="vol-icon" aria-hidden="true">🔊</span>
+          <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8"
+                 aria-label="Volume" />
+        </div>
+      </div>
+
+      <audio id="audio" preload="none"></audio>
+    </section>
+
+    <!-- Previous tracks -->
+    <section class="previous">
+      <h2>Previous tracks:</h2>
+      <ol class="track-list" id="track-list">
+        <li class="empty">Loading…</li>
+      </ol>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Radio Calico · <strong>Kick back and enjoy the crystal-clear audio.</strong></p>
+  </footer>
+
+  <!-- hls.js: plays the HLS (.m3u8) streams in browsers without native HLS support -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
