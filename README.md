@@ -15,6 +15,12 @@ npm start          # or: npm run dev  (auto-reload via nodemon)
 
 Open <http://localhost:3000>. Override the port with `PORT=4000 npm start`.
 
+## Continuous integration
+
+Pull requests are automatically reviewed by Claude, and mentioning `@claude` in
+an issue or PR comment runs Claude in context. See [CLAUDE.md §12](./CLAUDE.md)
+for the workflows and required `CLAUDE_CODE_OAUTH_TOKEN` secret.
+
 ## Full documentation
 
 **[CLAUDE.md](./CLAUDE.md) is the project's development guide and reproduction
