@@ -306,3 +306,35 @@ To recreate this project in an empty folder:
 - When changing CSS, verify **both** the home page and `/users/` still render.
 - Stations are configured only in the `STATIONS` array — don't hard-code stream
   URLs elsewhere.
+
+---
+
+## 12. CI / @claude automation
+
+Two GitHub Actions workflows in `.github/workflows/` use
+[anthropics/claude-code-action](https://github.com/anthropics/claude-code-action),
+authenticated with the **`CLAUDE_CODE_OAUTH_TOKEN`** repo secret (a Pro/Max OAuth
+token generated locally via `claude setup-token`):
+
+| Workflow | File | Trigger | What it does |
+| -------- | ---- | ------- | ------------ |
+| **Claude Code** | `claude.yml` | `@claude` mention in an issue, PR, or review comment | Runs Claude to answer / implement the request in context |
+| **Claude Code Review** | `claude-code-review.yml` | `pull_request` (`opened`, `synchronize`) | Automatically reviews the PR diff and leaves inline + summary comments |
+
+**Required setup on the repo (one-time):**
+1. Install the **Claude GitHub App** (<https://github.com/apps/claude>) on the
+   account/org and grant it access to this repo. On an **org** you're only a
+   *member* of, this needs an **org owner** to approve the install.
+2. Add the **`CLAUDE_CODE_OAUTH_TOKEN`** secret under
+   **Settings → Secrets and variables → Actions**. Generate it with
+   `claude setup-token` (token starts with `sk-ant-oat…`). Rotate it if exposed.
+   - To use an API key instead, swap the `claude_code_oauth_token:` input for
+     `anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}` and add that secret.
+
+**Notes**
+- The review workflow runs non-interactively because it sets a `prompt:`; the
+  mention workflow waits for an `@claude` trigger phrase instead.
+- For PRs from the **same repo**, both workflows have access to the secret. PRs
+  from **forks** can't read secrets, so the review won't run on fork PRs.
+- Enterprise-managed accounts may be blocked by policy from interacting with
+  repos outside the enterprise — trigger/test from an account that owns the repo.

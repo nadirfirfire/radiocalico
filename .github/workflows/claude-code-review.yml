@@ -1,0 +1,43 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Review this pull request. The project is a Node.js + Express + SQLite
+            radio website with a no-build vanilla front-end — see CLAUDE.md for
+            architecture and conventions.
+
+            Focus on:
+            - Correctness bugs and edge cases
+            - Security: input validation, SQL injection, XSS (HTML interpolation
+              must be escaped), and auth/rating-identity logic
+            - Adherence to the project's conventions in CLAUDE.md
+            - Clear, high-confidence simplifications (skip nitpicks)
+
+            Leave concise inline comments on specific lines and a short summary.
+            Be constructive. Use `gh pr comment` for the summary and
+            `mcp__github_inline_comment__create_inline_comment` for inline notes.
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+            --max-turns 20
