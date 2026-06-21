@@ -32,6 +32,10 @@ const STATIONS = [
 ];
 // ===========================================================================
 
+// Shared rating/format helpers (also covered by unit tests). Loaded via
+// /rating.js before this script.
+const { escapeHtml, fmtTime, nextVote, ratingHtml } = window.RadioCalicoRating;
+
 // A vote is tied to the listener's machine/network on the server (derived from
 // their IP), so it counts once regardless of browser. The client sends no id.
 let myRatings = {}; // { trackId: 1 | -1 } — this machine's own votes
@@ -59,37 +63,6 @@ let latestApiTrack = null; // most recent /api/now-playing result
 let hls = null;            // active hls.js instance, if any
 
 // === Helpers ===============================================================
-function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-  ));
-}
-
-// Format seconds as m:ss for the player bar's elapsed time.
-function fmtTime(secs) {
-  if (!isFinite(secs) || secs < 0) secs = 0;
-  const m = Math.floor(secs / 60);
-  const s = Math.floor(secs % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
-
-// Thumbs up/down control for a track. `mine` is this listener's vote (1/-1/0);
-// the active button is highlighted. Counts are the totals across all listeners.
-function ratingHtml(track) {
-  const mine = myRatings[track.id] || 0;
-  const up = track.thumbs_up || 0;
-  const down = track.thumbs_down || 0;
-  return `
-    <button class="rate-btn up ${mine === 1 ? 'active' : ''}" data-rate data-value="1"
-            aria-pressed="${mine === 1}" aria-label="Thumbs up" title="Thumbs up">
-      <span class="rate-icon">👍</span><span class="rate-count">${up}</span>
-    </button>
-    <button class="rate-btn down ${mine === -1 ? 'active' : ''}" data-rate data-value="-1"
-            aria-pressed="${mine === -1}" aria-label="Thumbs down" title="Thumbs down">
-      <span class="rate-icon">👎</span><span class="rate-count">${down}</span>
-    </button>`;
-}
-
 function setIcon(state) {
   playBtn.classList.toggle('loading', state === 'loading');
   if (state === 'loading')      playIcon.textContent = '◐';
@@ -118,7 +91,7 @@ function renderNowPlaying() {
     // Quality lines + ratings only for the lossless library station.
     qualityEl.hidden = !currentStation.lossless;
     npRating.dataset.track = t.id;
-    npRating.innerHTML = ratingHtml(t);
+    npRating.innerHTML = ratingHtml(t, myRatings[t.id] || 0);
     rateRow.hidden = false;
     return;
   }
@@ -145,7 +118,7 @@ function renderHistory(tracks) {
   listEl.innerHTML = tracks.map((t) => `
     <li>
       <span class="pt-text"><strong>${escapeHtml(t.artist)}:</strong> ${escapeHtml(t.title)}</span>
-      <span class="rating" data-track="${t.id}">${ratingHtml(t)}</span>
+      <span class="rating" data-track="${t.id}">${ratingHtml(t, myRatings[t.id] || 0)}</span>
     </li>`).join('');
 }
 
@@ -171,7 +144,7 @@ async function refresh() {
 // Cast a vote. Clicking your current vote again retracts it (value 0). A
 // listener only ever has one vote per song — enforced on the server too.
 async function rate(trackId, value) {
-  const send = myRatings[trackId] === value ? 0 : value;
+  const send = nextVote(myRatings[trackId], value);
   try {
     const res = await fetch(`/api/tracks/${trackId}/ratings`, {
       method: 'POST',

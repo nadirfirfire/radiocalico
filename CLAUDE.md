@@ -24,6 +24,7 @@ Users CRUD admin page. The look-and-feel follows the Radio Calico brand guide.
   no framework). HLS playback uses [hls.js](https://github.com/video-dev/hls.js)
   loaded from a CDN.
 - **Dev reload:** [nodemon](https://github.com/remy/nodemon)
+- **Testing:** [Jest](https://jestjs.io/) + [supertest](https://github.com/ladjs/supertest) (backend API) + jsdom (front-end) — see §13
 
 There is **no framework, bundler, or transpiler** — keep it that way unless
 there's a strong reason. Front-end JS talks to the JSON API with `fetch`.
@@ -38,20 +39,25 @@ radiocalico/
 ├── README.md            # Short quickstart, points here
 ├── package.json         # Scripts + dependencies
 ├── package-lock.json
+├── jest.config.js       # Jest config: backend (node) + frontend (jsdom) projects (§13)
 ├── .npmrc               # Zscaler-safe CA bundle (see §9)
-├── .gitignore           # Ignores node_modules/ and data.db*
+├── .gitignore           # Ignores node_modules/, data.db*, coverage/
 ├── server.js            # Express app: static hosting + JSON API + rating logic
 ├── db.js                # SQLite connection, pragmas, schema (CREATE TABLE IF NOT EXISTS)
 ├── seed.js              # Inserts sample tracks for local development
 ├── data.db              # SQLite database file (git-ignored, created on first run)
-└── public/              # Static front-end (served at /)
-    ├── index.html       # Home / player page (now-playing, rating, previous tracks)
-    ├── app.js           # Home front-end: player, stations, ratings, 15s polling
-    ├── styles.css       # All styling (brand palette); shared with the users page
-    ├── logo.png         # Brand logo (copied from the style-guide assets)
-    └── users/
-        ├── index.html   # Users admin page markup
-        └── users.js     # Users CRUD front-end
+├── public/              # Static front-end (served at /)
+│   ├── index.html       # Home / player page (now-playing, rating, previous tracks)
+│   ├── app.js           # Home front-end: player, stations, ratings, 15s polling
+│   ├── rating.js        # Shared, DOM-free rating/format helpers (UMD; unit-tested)
+│   ├── styles.css       # All styling (brand palette); shared with the users page
+│   ├── logo.png         # Brand logo (copied from the style-guide assets)
+│   └── users/
+│       ├── index.html   # Users admin page markup
+│       └── users.js     # Users CRUD front-end
+└── tests/               # Jest tests
+    ├── backend/         # supertest API tests (in-memory SQLite)
+    └── frontend/        # jsdom tests for public/rating.js
 ```
 
 The brand assets and style guide live **outside** the repo at
@@ -66,6 +72,7 @@ npm install        # first time (see §9 if behind Zscaler)
 npm start          # production-style: node server.js
 npm run dev        # auto-reload on changes via nodemon
 node seed.js       # populate sample tracks so the page has content
+npm test           # run the Jest suite (backend + frontend) — see §13
 ```
 
 Then open <http://localhost:3000>.
@@ -320,6 +327,7 @@ token generated locally via `claude setup-token`):
 | -------- | ---- | ------- | ------------ |
 | **Claude Code** | `claude.yml` | `@claude` mention in an issue, PR, or review comment | Runs Claude to answer / implement the request in context |
 | **Claude Code Review** | `claude-code-review.yml` | `pull_request` (`opened`, `synchronize`) | Automatically reviews the PR diff and leaves inline + summary comments |
+| **Tests** | `tests.yml` | `push` to `main`, all PRs | Runs `npm ci` + the Jest suite with coverage (see §13) |
 
 **Required setup on the repo (one-time):**
 1. Install the **Claude GitHub App** (<https://github.com/apps/claude>) on the
@@ -338,3 +346,45 @@ token generated locally via `claude setup-token`):
   from **forks** can't read secrets, so the review won't run on fork PRs.
 - Enterprise-managed accounts may be blocked by policy from interacting with
   repos outside the enterprise — trigger/test from an account that owns the repo.
+
+---
+
+## 13. Testing
+
+[Jest](https://jestjs.io/) drives both sides from one `npm test`, configured in
+`jest.config.js` as two **projects**:
+
+| Project | Env | Location | Tooling |
+| ------- | --- | -------- | ------- |
+| `backend` | `node` | `tests/backend/` | [supertest](https://github.com/ladjs/supertest) against the Express app, with an **in-memory SQLite** DB |
+| `frontend` | `jsdom` | `tests/frontend/` | exercises the shared helpers in `public/rating.js` |
+
+```sh
+npm test            # run everything
+npm run test:watch  # watch mode
+npm run test:coverage
+```
+
+**How the tests stay isolated & fast**
+- `db.js` honors `DATABASE_PATH`; tests set it to `:memory:` **before** requiring
+  the app, so they never touch the real `data.db`.
+- `server.js` only calls `app.listen()` when run directly (`require.main`), and
+  exports the `app` (plus `listenerIdFor`) so supertest can drive it in-process.
+- Tests set `TRUST_PROXY=true` and vary `X-Forwarded-For` to simulate distinct
+  client IPs (distinct voters).
+
+**What's covered (the ratings system):**
+- Backend: vote up/down, the one-vote-per-IP guarantee (no double counting),
+  changing and retracting a vote, per-track aggregate totals, `/api/my-ratings`
+  per IP, `400`/`404` validation, and the hashed `listenerIdFor` identity.
+- Frontend: `escapeHtml`, `fmtTime`, the `nextVote` toggle logic, and the
+  `ratingHtml` markup (counts, active state, `data-*` attributes).
+
+**Conventions for new tests**
+- Keep front-end logic that needs testing in a shared, DOM-free module (like
+  `public/rating.js`, loaded via a UMD wrapper) rather than inline in `app.js`,
+  so it imports cleanly under Jest without running the page's side effects.
+- Backend tests talk to the app over HTTP (supertest) — don't reach into Express
+  internals. Seed/clear the DB in `beforeEach` for isolation.
+- `coverage/` is git-ignored; `rating.js` has a coverage threshold in
+  `jest.config.js` — keep new helpers covered.

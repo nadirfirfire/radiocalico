@@ -218,6 +218,14 @@ app.delete('/api/users/:id', (req, res) => {
   res.status(204).end();
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+// Only start listening when run directly (`node server.js`). When required by
+// tests (supertest) the app is used without binding a port.
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+  });
+}
+
+// Export the app for supertest; attach helpers for unit testing.
+module.exports = app;
+module.exports.listenerIdFor = listenerIdFor;

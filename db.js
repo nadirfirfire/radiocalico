@@ -3,7 +3,10 @@ const Database = require('better-sqlite3');
 const path = require('path');
 
 // The database lives in a single file next to the app. Delete it to reset.
-const db = new Database(path.join(__dirname, 'data.db'));
+// DATABASE_PATH overrides the location (tests use ':memory:' for an isolated,
+// throwaway database that never touches the real data.db).
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'data.db');
+const db = new Database(dbPath);
 
 // Recommended pragmas for local dev: WAL mode for better concurrency, enforce FKs.
 db.pragma('journal_mode = WAL');
